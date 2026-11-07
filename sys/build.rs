@@ -245,6 +245,21 @@ fn main() {
         }
     }
 
+    if cfg!(feature = "vitisai") {
+        config.define("WHISPER_VITISAI", "ON");
+
+        // whisper.cpp's find_package(FlexmlRT) needs the CMake package that
+        // ships with the FlexML runtime. 'FlexmlRT_DIR' is the variable that
+        // flexmlrt's own setup.sh exports; 'FLEXMLRT_DIR' is accepted as an
+        // alias.
+        println!("cargo:rerun-if-env-changed=FlexmlRT_DIR");
+        println!("cargo:rerun-if-env-changed=FLEXMLRT_DIR");
+
+        if let Some(pkg_dir) = flexmlrt_package_dir() {
+            config.define("FlexmlRT_DIR", pkg_dir.display().to_string());
+        }
+    }
+
     if cfg!(feature = "openblas") {
         config.define("GGML_BLAS", "ON");
         config.define("GGML_BLAS_VENDOR", "OpenBLAS");
@@ -367,6 +382,29 @@ fn get_cpp_link_stdlib(target: &str) -> Option<&'static str> {
     } else {
         Some("stdc++")
     }
+}
+
+// Locate the FlexmlRT CMake package directory from the environment.
+fn flexmlrt_package_dir() -> Option<PathBuf> {
+    let candidate = env::var("FlexmlRT_DIR")
+        .or_else(|_| env::var("FLEXMLRT_DIR"))
+        .ok()
+        .map(PathBuf::from)?;
+
+    if candidate.join("FlexmlRTConfig.cmake").is_file() {
+        return Some(candidate);
+    }
+
+    let nested = candidate.join("share").join("cmake").join("FlexmlRT");
+    if nested.join("FlexmlRTConfig.cmake").is_file() {
+        return Some(nested);
+    }
+
+    println!(
+        "cargo:warning=neither FlexmlRT_DIR nor FLEXMLRT_DIR points at a FlexmlRT CMake package; \
+         relying on CMake search heuristics for find_package(FlexmlRT)"
+    );
+    None
 }
 
 fn add_link_search_path(dir: &std::path::Path) -> std::io::Result<()> {

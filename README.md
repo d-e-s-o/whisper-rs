@@ -74,6 +74,7 @@ All disabled by default unless otherwise specified.
 * `openblas`: enable OpenBLAS support.
 * `metal`: enable Metal support. Implicitly enables hidden GPU flag at runtime.
 * `vulkan`: enable Vulkan support. Implicitly enables hidden GPU flag at runtime.
+* `vitisai`: enable the AMD Ryzen AI NPU backend (XDNA NPU, e.g. Ryzen AI 300 / Strix Halo).
 * `log_backend`: allows hooking into whisper.cpp's log output and sending it to the `log` backend. Requires calling
 * `tracing_backend`: allows hooking into whisper.cpp's log output and sending it to the `tracing` backend.
 
