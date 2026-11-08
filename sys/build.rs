@@ -382,12 +382,23 @@ fn add_link_search_path(dir: &std::path::Path) -> std::io::Result<()> {
 fn get_whisper_cpp_version(whisper_root: &std::path::Path) -> std::io::Result<Option<String>> {
     let cmake_lists = BufReader::new(File::open(whisper_root.join("CMakeLists.txt"))?);
 
+    let mut major = None;
+    let mut minor = None;
+    let mut patch = None;
+
     for line in cmake_lists.lines() {
         let line = line?;
 
-        if let Some(suffix) = line.strip_prefix(r#"project("whisper.cpp" VERSION "#) {
-            let whisper_cpp_version = suffix.trim_end_matches(')');
-            return Ok(Some(whisper_cpp_version.into()));
+        if let Some(value) = line.strip_prefix("set(WHISPER_VERSION_MAJOR ") {
+            major = Some(value.trim_end_matches(')').to_owned());
+        } else if let Some(value) = line.strip_prefix("set(WHISPER_VERSION_MINOR ") {
+            minor = Some(value.trim_end_matches(')').to_owned());
+        } else if let Some(value) = line.strip_prefix("set(WHISPER_VERSION_PATCH ") {
+            patch = Some(value.trim_end_matches(')').to_owned());
+        }
+
+        if let (Some(major), Some(minor), Some(patch)) = (&major, &minor, &patch) {
+            return Ok(Some(format!("{major}.{minor}.{patch}")));
         }
     }
 
